@@ -28,27 +28,47 @@ import java.util.stream.Stream;
 @CommonsLog
 public class StorageService {
     private final String baseAppUrl;
+    private final boolean uniqueNamesEnabled;
     private String storageFolderPath;
 
     public StorageService(@Value("${documents.store.folder}") String storageFolderPath,
-                          @Value("${base.app.url}") String baseAppUrl) {
+                          @Value("${base.app.url}") String baseAppUrl,
+                          @Value("${documents.unique-names.enabled:true}") boolean uniqueNamesEnabled) {
         this.storageFolderPath = storageFolderPath;
         this.baseAppUrl = baseAppUrl;
+        this.uniqueNamesEnabled = uniqueNamesEnabled;
     }
 
     @SneakyThrows
     public DocumentDto upload(MultipartFile file, String guid) {
         File folderToSave = getOrCreateFolderByGuid(guid);
-        String fileName = file.getOriginalFilename();
-        /*
-             better generate unique file name to avoid replacement
-             and save somewhere original file name for mapping
-        */
+        String fileName = generateUniqueFileName(folderToSave, file.getOriginalFilename());
         File savedFile = new File(folderToSave.getAbsolutePath() + "/" + fileName);
         file.getInputStream().transferTo(new FileOutputStream(savedFile));
         return DocumentDto.builder()
                 .url(constructUrl(fileName, guid))
+                .originalName(fileName)
                 .build();
+    }
+
+    private String generateUniqueFileName(File folder, String originalFileName) {
+        if (!uniqueNamesEnabled) {
+            return originalFileName;
+        }
+        File candidate = new File(folder, originalFileName);
+        if (!candidate.exists()) {
+            return originalFileName;
+        }
+        int dotIndex = originalFileName.lastIndexOf('.');
+        String baseName = dotIndex == -1 ? originalFileName : originalFileName.substring(0, dotIndex);
+        String extension = dotIndex == -1 ? "" : originalFileName.substring(dotIndex);
+        int counter = 1;
+        String uniqueName;
+        do {
+            uniqueName = baseName + " (" + counter + ")" + extension;
+            counter++;
+        } while (new File(folder, uniqueName).exists());
+        return uniqueName;
     }
 
     public DocumentDto getDocumentInfo(String url) {
@@ -73,7 +93,9 @@ public class StorageService {
     public List<DocumentDto> getDocuments(String guid) {
         File folder = getOrCreateFolderByGuid(guid);
         return Stream.of(folder.list()).sorted().map(f -> DocumentDto.builder()
-                .url(constructUrl(f, guid)).build()).collect(Collectors.toList());
+                .url(constructUrl(f, guid))
+                .originalName(f)
+                .build()).collect(Collectors.toList());
     }
 
     public List<ClonedDocumentDto> cloneDocuments(CloneParamsDto cloneParamsDto) {

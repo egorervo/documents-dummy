@@ -16,8 +16,8 @@ public class DocumentsApplication {
 
 
 	@Bean
-	public FilterRegistrationBean loggingFilter() {
-		final FilterRegistrationBean registrationBean = new FilterRegistrationBean();
+	public FilterRegistrationBean<LoggingFilter> loggingFilter() {
+		final FilterRegistrationBean<LoggingFilter> registrationBean = new FilterRegistrationBean<>();
 		registrationBean.setFilter(new LoggingFilter());
 		registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE);
 		return registrationBean;

@@ -1,38 +1,34 @@
 package com.stripo.example.documents.security;
 
 import com.stripo.example.documents.rest.RestConstants;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@EnableGlobalMethodSecurity(prePostEnabled = true)
-public class SecurityConfig extends WebSecurityConfigurerAdapter {
+@EnableMethodSecurity(prePostEnabled = true)
+public class SecurityConfig {
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http.antMatcher("/**")
-                .authorizeRequests()
-                .anyRequest()
-                .permitAll()
-                .and().httpBasic().and()
-                .csrf().disable();
-    }
-
-    @Configuration
+    @Bean
     @Order(1)
-    public static class DeleteDocumentConfig extends WebSecurityConfigurerAdapter {
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
-            http.antMatcher("/" + RestConstants.BASE_URL + "**")
-                    .authorizeRequests()
-                    .anyRequest()
-                    .hasAnyRole("USER")
-                    .and().httpBasic().and()
-                    .csrf().disable();
-        }
+    public SecurityFilterChain documentsSecurityFilterChain(HttpSecurity http) throws Exception {
+        http.securityMatcher("/" + RestConstants.BASE_URL + "/**")
+                .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("USER"))
+                .httpBasic(Customizer.withDefaults())
+                .csrf(csrf -> csrf.disable());
+        return http.build();
     }
 
+    @Bean
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http.securityMatcher("/**")
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .httpBasic(Customizer.withDefaults())
+                .csrf(csrf -> csrf.disable());
+        return http.build();
+    }
 }

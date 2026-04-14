@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
@@ -36,9 +36,9 @@ class DocumentsApplicationTests {
         body.add("guid", "test-guid");
         ResponseEntity<DocumentDto> stringResponseEntity = this.restTemplate
                 .withBasicAuth("user", "secret")
-                .postForEntity("http://localhost:" + port + RestConstants.BASE_URL, body, DocumentDto.class);
+                .postForEntity("http://localhost:" + port + "/" + RestConstants.BASE_URL, body, DocumentDto.class);
 
-        assertThat(stringResponseEntity.getBody(), is(DocumentDto.builder().url("http://localhost:8080/documents/file/test-guid/file").build()));
+        assertThat(stringResponseEntity.getBody(), is(DocumentDto.builder().url("http://localhost:8080/file/test-guid/stripo.png").build()));
 
     }
 
